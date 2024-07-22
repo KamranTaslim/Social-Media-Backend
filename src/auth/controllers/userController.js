@@ -5,9 +5,43 @@ const User = require("../models/user");
 const authMiddleware = require("../middlewares/authMiddleware");
 const router = express.Router();
 
-// Signup route (existing code)
+// Signup route
 router.post("/signup", async (req, res) => {
-  // Existing signup code
+  const { email, password } = req.body;
+
+  try {
+    // Check if the user already exists
+    const existingUser = await User.findOne({ email });
+    if (existingUser) {
+      return res.status(400).json({ message: "User already exists" });
+    }
+
+    // Hash the password
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    // Create a new user
+    const newUser = new User({
+      email,
+      password: hashedPassword,
+    });
+
+    // Save the user to the database
+    await newUser.save();
+
+    // Create a JWT token
+    const token = jwt.sign(
+      { userId: newUser._id, email: newUser.email },
+      process.env.JWT_SECRET,
+      {
+        expiresIn: "2h",
+      }
+    );
+
+    // Send the token in the response
+    res.status(201).json({ token });
+  } catch (error) {
+    res.status(500).json({ message: "Server error" });
+  }
 });
 
 // Signin route
@@ -36,6 +70,7 @@ router.post("/signin", async (req, res) => {
         expiresIn: "2h",
       }
     );
+
     // Send the token in the response
     res.json({ token });
   } catch (error) {
@@ -43,6 +78,7 @@ router.post("/signin", async (req, res) => {
   }
 });
 
+// Token validation route
 router.get("/validate-token", authMiddleware, (req, res) => {
   res.json({ valid: true });
 });
