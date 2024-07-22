@@ -16,30 +16,19 @@ router.post("/signup", async (req, res) => {
       return res.status(400).json({ message: "User already exists" });
     }
 
-    // Hash the password
-    const hashedPassword = await bcrypt.hash(password, 10);
-
     // Create a new user
     const newUser = new User({
       email,
-      password: hashedPassword,
+      password,
     });
 
     // Save the user to the database
     await newUser.save();
 
-    // Create a JWT token
-    const token = jwt.sign(
-      { userId: newUser._id, email: newUser.email },
-      process.env.JWT_SECRET,
-      {
-        expiresIn: "2h",
-      }
-    );
-
-    // Send the token in the response
-    res.status(201).json({ token });
+    // Respond with a success message
+    res.status(201).json({ message: "User successfully registered" });
   } catch (error) {
+    console.error("Signup error:", error); // Log the error for debugging
     res.status(500).json({ message: "Server error" });
   }
 });
@@ -74,6 +63,7 @@ router.post("/signin", async (req, res) => {
     // Send the token in the response
     res.json({ token });
   } catch (error) {
+    console.error("Signin error:", error); // Log the error for debugging
     res.status(500).json({ message: "Server error" });
   }
 });
